@@ -4,7 +4,7 @@ export interface Perfume {
   name: string;
   brand: string;
   gender: 'Male' | 'Female' | 'Unisex';
-  concentration: 'EDP' | 'EDT' | 'Parfum' | 'Cologne' | 'Extrait';
+  concentration: 'EDP' | 'EDT' | 'EDC' | 'Parfum' | 'Cologne' | 'Extrait';
   scentFamily: string;
   topNotes: string[];
   middleNotes: string[];
