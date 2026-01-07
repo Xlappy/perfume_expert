@@ -11,10 +11,36 @@ interface PreferenceManagerProps {
 
 const PreferenceManager: React.FC<PreferenceManagerProps> = ({ preferences, onChange, compact }) => {
   const toggleFamily = (family: string) => {
-    const list = preferences.likedFamilies.includes(family)
-      ? preferences.likedFamilies.filter(f => f !== family)
-      : [...preferences.likedFamilies, family];
-    onChange({ ...preferences, likedFamilies: list });
+    const isLiked = preferences.likedFamilies.includes(family);
+    const isDisliked = preferences.dislikedFamilies.includes(family);
+
+    let newLiked = [...preferences.likedFamilies];
+    let newDisliked = [...preferences.dislikedFamilies];
+
+    if (isLiked) {
+      newLiked = newLiked.filter(f => f !== family);
+    } else if (isDisliked) {
+      newDisliked = newDisliked.filter(f => f !== family);
+    } else {
+      newLiked.push(family);
+    }
+
+    onChange({ ...preferences, likedFamilies: newLiked, dislikedFamilies: newDisliked });
+  };
+
+  const toggleDislikeFamily = (family: string) => {
+    const isDisliked = preferences.dislikedFamilies.includes(family);
+    let newDisliked = [...preferences.dislikedFamilies];
+    let newLiked = [...preferences.likedFamilies];
+
+    if (isDisliked) {
+      newDisliked = newDisliked.filter(f => f !== family);
+    } else {
+      newDisliked.push(family);
+      newLiked = newLiked.filter(f => f !== family);
+    }
+
+    onChange({ ...preferences, likedFamilies: newLiked, dislikedFamilies: newDisliked });
   };
 
   const toggleGender = (gender: string) => {
@@ -25,33 +51,65 @@ const PreferenceManager: React.FC<PreferenceManagerProps> = ({ preferences, onCh
   };
 
   const toggleNote = (note: string, type: 'like' | 'dislike') => {
-    const field = type === 'like' ? 'favoriteNotes' : 'dislikedNotes';
-    const list = preferences[field].includes(note)
-      ? preferences[field].filter(n => n !== note)
-      : [...preferences[field], note];
-    onChange({ ...preferences, [field]: list });
+    const isLiked = preferences.favoriteNotes.includes(note);
+    const isDisliked = preferences.dislikedNotes.includes(note);
+
+    let newLiked = [...preferences.favoriteNotes];
+    let newDisliked = [...preferences.dislikedNotes];
+
+    if (type === 'like') {
+      if (isLiked) {
+        newLiked = newLiked.filter(n => n !== note);
+      } else if (isDisliked) {
+        newDisliked = newDisliked.filter(n => n !== note);
+      } else {
+        newLiked.push(note);
+      }
+    } else { // type === 'dislike'
+      if (isDisliked) {
+        newDisliked = newDisliked.filter(n => n !== note);
+      } else {
+        newDisliked.push(note);
+        newLiked = newLiked.filter(n => n !== note);
+      }
+    }
+
+    onChange({ ...preferences, favoriteNotes: newLiked, dislikedNotes: newDisliked });
   };
 
   return (
     <div className={`space-y-16 ${compact ? 'p-12' : 'p-16'}`}>
       {/* Olfactive Families - Bigger Buttons */}
       <div className="space-y-8">
-        <label className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] block border-l-4 border-emerald-500 pl-6">
-          Scent Families
-        </label>
+        <div className="flex justify-between items-end">
+          <label className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] block border-l-4 border-emerald-500 pl-6">
+            Scent Families
+          </label>
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+            Tip: Double-click to exclude
+          </span>
+        </div>
         <div className="flex flex-wrap gap-3">
-          {SCENT_FAMILIES.map(family => (
-            <button
-              key={family}
-              onClick={() => toggleFamily(family)}
-              className={`px-8 py-4 rounded-2xl text-xs font-bold transition-all border-2 ${preferences.likedFamilies.includes(family)
+          {SCENT_FAMILIES.map(family => {
+            const isLiked = preferences.likedFamilies.includes(family);
+            const isDisliked = preferences.dislikedFamilies.includes(family);
+
+            return (
+              <button
+                key={family}
+                onClick={() => toggleFamily(family)}
+                onDoubleClick={() => toggleDislikeFamily(family)}
+                className={`px-8 py-4 rounded-2xl text-xs font-bold transition-all border-2 select-none ${isLiked
                   ? 'bg-slate-900 text-white border-slate-900 shadow-xl scale-105'
-                  : 'bg-white text-slate-500 border-slate-100 hover:border-emerald-300 hover:text-emerald-600'
-                }`}
-            >
-              <span className="mr-2 opacity-60">#</span>{family}
-            </button>
-          ))}
+                  : isDisliked
+                    ? 'bg-rose-50 text-rose-500 border-rose-200 opacity-80 line-through'
+                    : 'bg-white text-slate-500 border-slate-100 hover:border-emerald-300 hover:text-emerald-600'
+                  }`}
+              >
+                <span className="mr-2 opacity-60">{isDisliked ? '✕' : '#'}</span>{family}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -67,8 +125,8 @@ const PreferenceManager: React.FC<PreferenceManagerProps> = ({ preferences, onCh
                 key={gender}
                 onClick={() => toggleGender(gender)}
                 className={`px-10 py-4 rounded-2xl text-xs font-black transition-all border-2 ${preferences.preferredGender.includes(gender)
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xl'
-                    : 'bg-white text-slate-500 border-slate-100 hover:border-emerald-300'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xl'
+                  : 'bg-white text-slate-500 border-slate-100 hover:border-emerald-300'
                   }`}
               >
                 {gender}
@@ -109,18 +167,27 @@ const PreferenceManager: React.FC<PreferenceManagerProps> = ({ preferences, onCh
           Desired Notes (Core Essence)
         </label>
         <div className="flex flex-wrap gap-3">
-          {POPULAR_NOTES.map(note => (
-            <button
-              key={note}
-              onClick={() => toggleNote(note, 'like')}
-              className={`px-6 py-3 rounded-2xl text-xs font-bold transition-all border-2 ${preferences.favoriteNotes.includes(note)
+          {POPULAR_NOTES.map(note => {
+            const isLiked = preferences.favoriteNotes.includes(note);
+            const isDisliked = preferences.dislikedNotes.includes(note);
+
+            return (
+              <button
+                key={note}
+                onClick={() => toggleNote(note, 'like')}
+                onDoubleClick={() => toggleNote(note, 'dislike')}
+                className={`px-6 py-3 rounded-2xl text-xs font-bold transition-all border-2 select-none ${isLiked
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg'
-                  : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
-                }`}
-            >
-              {note}
-            </button>
-          ))}
+                  : isDisliked
+                    ? 'bg-rose-50 text-rose-500 border-rose-200 opacity-80 line-through'
+                    : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
+                  }`}
+              >
+                {isDisliked && <span className="mr-1">✕</span>}
+                {note}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -135,8 +202,8 @@ const PreferenceManager: React.FC<PreferenceManagerProps> = ({ preferences, onCh
                   key={v}
                   onClick={() => onChange({ ...preferences, minLongevity: v })}
                   className={`w-14 h-14 rounded-2xl font-black text-base transition-all border-2 ${preferences.minLongevity === v
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-2xl scale-110'
-                      : 'bg-white text-slate-300 border-slate-100 hover:border-slate-200'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-2xl scale-110'
+                    : 'bg-white text-slate-300 border-slate-100 hover:border-slate-200'
                     }`}
                 >
                   {v}
@@ -158,8 +225,8 @@ const PreferenceManager: React.FC<PreferenceManagerProps> = ({ preferences, onCh
                     onChange({ ...preferences, preferredConcentration: list });
                   }}
                   className={`px-8 py-4 rounded-full text-xs font-black uppercase tracking-widest transition-all border-2 ${preferences.preferredConcentration?.includes(c)
-                      ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                      : 'bg-white text-slate-300 border-slate-100 hover:border-slate-200'
+                    ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                    : 'bg-white text-slate-300 border-slate-100 hover:border-slate-200'
                     }`}
                 >
                   {c}
